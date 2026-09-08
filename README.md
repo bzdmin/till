@@ -83,6 +83,7 @@ npm run bazaar -- "crypto market data"
 | 5 | The mandate refuses a purchase **before anything is signed** | `npm run rehearse`, no chain, no money |
 | 6 | Bazaar listings **cannot be trusted without checking** | `npm run bazaar -- "crypto market data"` |
 | 7 | "No private key" and "front-run resistant" **cannot both be had today** | `npm run which-typehash` |
+| 8 | The buyer's **decision** is model-driven, and the money is not | `npm run test:intent` |
 
 On 2026-09-08 the buyer discovered CoinMarketCap in the B402 Bazaar, verified the endpoint served what its listing claimed, signed with the Agentic Wallet and paid **0.0100 USD1**, receiving 18,516 bytes of market data. Till did not broadcast that settlement; the merchant's facilitator did, submitting from `0x34f7a661`, the address B402 publishes as its signer in payment requirements. Every other transaction in this repository moves between two wallets under one operator, and that one does not.
 
@@ -127,6 +128,31 @@ src/buyer/                    skill choice, the owner mandate, Bazaar discovery,
 src/mcp/                      Till as an MCP server
 src/ui/                       the tape
 ```
+
+## Which parts are the model, and which are deliberately not
+
+The buyer runs on **`claude-opus-5`**. Given a plain-language request and the counter's catalogue, it decides which skill answers the request and which Binance pair the request is about, and it says why in a sentence that lands on the tape.
+
+```
+A  "should I hold my solana?"
+?  chose btc-brief on SOLUSDT  [claude]
+   A single short-term read answers this, no need for the expensive item.
+```
+
+That is the judgement, and it is the only part a model touches. Everything downstream is deterministic on purpose:
+
+| step | who decides | why |
+|---|---|---|
+| what to buy, and on what asset | `claude-opus-5` | it is a judgement about intent, which is what models are for |
+| whether it can be afforded | the mandate, plain arithmetic | a model that could reason about its own budget is not a guardrail |
+| whether the payment is valid | signature recovery and field checks | a payment either verifies or it does not, and there is nothing to interpret |
+| whether the goods are acceptable | a fixed predicate | it must give the same answer twice on the same input |
+| the stance being sold | a fixed rule over the candles | the same candles must always give the same call, or the signature attests to nothing |
+
+An agent whose spending limit is enforced by the same model that wants to spend has no limit, so the chooser never sees the cap. And a seller whose deliverable came from a model call could time out mid demo and could not be checked, so it does not use one.
+
+If `ANTHROPIC_API_KEY` is absent the buyer falls back to deterministic keyword rules, and the tape marks the row `[rules]` rather than `[claude]`, so it never implies a model made a call it did not make.
+
 
 ## Why this needed no permission from anyone
 
@@ -235,7 +261,7 @@ x402 proves a transfer, but it does not prove the work was good and it cannot cl
 - **USD1 rather than USDT or USDC**, for the reason above.
 - Both agents run under one operator, except the CoinMarketCap payment.
 - The stance is deterministic and checkable, not alpha, and is not claimed as such, since the product is the counter and the stance is inventory.
-- Skill selection runs on `claude-opus-5` when `ANTHROPIC_API_KEY` is set and on deterministic rules otherwise, with the tape naming which one ran every time.
+- The buyer needs `ANTHROPIC_API_KEY` to run on `claude-opus-5`, and falls back to deterministic rules without one. The tape marks which ran on every row.
 
 ## Run it
 
