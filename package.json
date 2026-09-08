@@ -1,0 +1,33 @@
+{
+  "name": "till",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A payment counter for agent skills on Binance x402.",
+  "scripts": {
+    "start": "tsx src/seller/server.ts",
+    "seller": "tsx src/seller/server.ts",
+    "demo": "tsx src/demo.ts",
+    "check": "tsx scripts/check-wallets.ts",
+    "preview": "tsx scripts/preview-skill.ts",
+    "recycle": "tsx scripts/recycle.ts",
+    "prove": "tsx scripts/prove-settlement.ts",
+    "test": "tsx scripts/test-validation.ts",
+    "rehearse": "tsx src/demo.ts --rehearse",
+    "ui": "tsx src/ui/server.ts",
+    "preview:deep": "tsx scripts/preview-deepdive.ts",
+    "test:intent": "tsx scripts/test-intent.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "viem": "^2.38.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

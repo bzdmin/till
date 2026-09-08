@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Till - a payment counter for agent skills</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --panel: #12161b;
+    --line: #1e252d;
+    --ink: #e8edf3;
+    --dim: #7d8b9a;
+    --amber: #f0b429;
+    --green: #3ddc97;
+    --red: #ff5d5d;
+    --blue: #6aa9ff;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 28px 24px 60px;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; }
+
+  header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 4px; }
+  h1 { font-size: 26px; margin: 0; letter-spacing: -0.02em; }
+  .tag { color: var(--dim); font-size: 14px; }
+  .sub { color: var(--dim); font-size: 13px; margin-bottom: 22px; }
+  .sub b { color: var(--ink); font-weight: 600; }
+
+  .agents { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px 16px;
+  }
+  .card .who { font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--dim); }
+  .card .addr { font-family: var(--mono); font-size: 11.5px; color: var(--dim); margin-top: 3px; }
+  .card .bal { font-family: var(--mono); font-size: 27px; margin-top: 8px; letter-spacing: -0.01em; }
+  .card .bal.flash { color: var(--green); transition: color .25s; }
+  .card .unit { font-size: 14px; color: var(--dim); }
+  .card .note { font-size: 12px; color: var(--dim); margin-top: 5px; }
+
+  .mandate { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+             padding: 12px 16px; margin-bottom: 16px; }
+  .mandate .top { display: flex; justify-content: space-between; font-size: 13px; }
+  .mandate .top span:last-child { font-family: var(--mono); }
+  .bar { height: 5px; background: #0a0c0f; border-radius: 3px; margin-top: 9px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0%; background: var(--green); transition: width .4s ease; }
+
+  .ask { display: flex; gap: 10px; margin-bottom: 10px; }
+  .ask input {
+    flex: 1; font: inherit; color: var(--ink); background: #0e1319;
+    border: 1px solid #2a3542; border-radius: 8px; padding: 12px 14px;
+  }
+  .ask input:focus { outline: none; border-color: #3f5060; }
+  .ask input::placeholder { color: #5d6b7a; }
+  .chips { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+  .chip { font-size: 12px; color: var(--dim); background: transparent; border: 1px solid var(--line);
+          border-radius: 999px; padding: 4px 11px; cursor: pointer; }
+  .chip:hover { color: var(--ink); border-color: #3a4756; }
+  .modelbadge { margin-left: auto; font-size: 11.5px; color: var(--dim); }
+  .modelbadge b { color: var(--amber); font-weight: 600; }
+
+  .actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  button {
+    font: inherit; font-weight: 550; color: var(--ink); cursor: pointer;
+    background: #19212a; border: 1px solid #2a3542; border-radius: 8px; padding: 11px 16px;
+  }
+  button:hover:not(:disabled) { background: #202b36; border-color: #3a4756; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button .price { color: var(--dim); font-weight: 400; }
+  button.ghost { background: transparent; border-color: var(--line); color: var(--dim); }
+
+  .tape { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .tape .head {
+    padding: 9px 16px; border-bottom: 1px solid var(--line);
+    font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--dim);
+    display: flex; justify-content: space-between;
+  }
+  .rows { padding: 6px 0; min-height: 120px; }
+  .empty { color: var(--dim); padding: 26px 16px; font-size: 13.5px; }
+
+  .row { display: grid; grid-template-columns: 92px 1fr; gap: 12px; padding: 9px 16px;
+         border-bottom: 1px solid #161c23; animation: in .22s ease both; }
+  .row:last-child { border-bottom: 0; }
+  @keyframes in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+  .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
+       color: var(--dim); padding-top: 3px; }
+  .v { font-family: var(--mono); font-size: 13.5px; word-break: break-word; }
+  .v .muted { color: var(--dim); }
+  .v a { color: var(--green); }
+
+  .k.intent { color: var(--blue); }
+  .k.decision { color: var(--blue); }
+  .k.c402 { color: var(--amber); }
+  .k.allow, .k.receipt, .k.deliverable { color: var(--green); }
+  .k.block, .k.refused, .k.nogoods { color: var(--red); }
+
+  .call { font-size: 18px; font-weight: 650; letter-spacing: .04em; }
+  .reason { color: var(--dim); font-size: 12.5px; margin-top: 3px; }
+  .pill { display: inline-block; font-size: 10.5px; padding: 1px 7px; border-radius: 999px;
+          border: 1px solid var(--line); color: var(--dim); margin-left: 7px; vertical-align: 1px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Till</h1>
+    <span class="tag">a payment counter for agent skills</span>
+  </header>
+  <div class="sub">
+    Agent A buys a signed market stance from Agent B. Payment settles
+    <b>EIP-3009 on BNB Chain</b> - Till broadcasts the buyer's signed authorization
+    itself, so it needs no merchant credentials from anyone.
+  </div>
+
+  <div class="agents">
+    <div class="card">
+      <div class="who">Agent A - buyer</div>
+      <div class="addr" id="addrA">-</div>
+      <div class="bal"><span id="balA">-</span> <span class="unit">USD1</span></div>
+      <div class="note">signs authorizations · holds no BNB · never sends a transaction</div>
+    </div>
+    <div class="card">
+      <div class="who">Agent B - seller</div>
+      <div class="addr" id="addrB">-</div>
+      <div class="bal"><span id="balB">-</span> <span class="unit">USD1</span></div>
+      <div class="note">prices the skill · broadcasts the settle · pays the gas</div>
+    </div>
+  </div>
+
+  <div class="mandate">
+    <div class="top">
+      <span>Owner mandate - daily cap</span>
+      <span><b id="remaining">-</b> of <span id="cap">-</span> USD1 remaining</span>
+    </div>
+    <div class="bar"><i id="barFill"></i></div>
+  </div>
+
+  <div class="ask">
+    <input id="ask" autocomplete="off" placeholder="Tell Agent A what you need - it picks the skill and checks the budget…" />
+    <button id="send">Ask</button>
+    <button id="clear" class="ghost">Clear</button>
+  </div>
+  <div class="chips">
+    <button class="chip" data-q="What should I do with my BTC position right now?">short-term read · <span id="priceBrief">-</span></button>
+    <button class="chip" data-q="Give me a thorough multi-timeframe read before I size up.">multi-timeframe · <span id="priceDeep">-</span></button>
+    <span class="modelbadge" id="modelbadge"></span>
+  </div>
+
+  <div class="tape">
+    <div class="head"><span>Tape</span><span id="status">idle</span></div>
+    <div class="rows" id="rows"><div class="empty">Nothing on the counter yet. Tell Agent A what you need.</div></div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const rowsEl = $("rows");
+let cap = 0;
+
+const short = (a) => a ? a.slice(0, 10) + "…" + a.slice(-6) : "-";
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+
+function addRow(kind, label, html) {
+  if (rowsEl.querySelector(".empty")) rowsEl.innerHTML = "";
+  const el = document.createElement("div");
+  el.className = "row";
+  el.innerHTML = `<div class="k ${kind}">${label}</div><div class="v">${html}</div>`;
+  rowsEl.appendChild(el);
+  el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function render(row) {
+  switch (row.kind) {
+    case "intent":
+      return addRow("intent", "intent", `A &nbsp;“${esc(row.text)}”`);
+    case "decision":
+      return addRow("decision", "decided",
+        `buy <b>${esc(row.skill)}</b>
+         <span class="pill">${row.source === "claude" ? "claude-opus-5" : "rule-based fallback"}</span>
+         <div class="reason">${esc(row.reasoning)}</div>`);
+    case "402":
+      return addRow("c402", "402",
+        `<b>402 Payment Required</b> · ${esc(row.price)}
+         <div class="reason">to ${esc(row.payTo)} on ${esc(row.network)}</div>`);
+    case "mandate":
+      return addRow(row.allowed ? "allow" : "block", row.allowed ? "mandate" : "mandate",
+        `${row.allowed ? "ALLOW" : "BLOCK"} <span class="muted">- ${esc(row.reason)}</span>`);
+    case "receipt":
+      return addRow("receipt", "settled",
+        `<a href="${esc(row.explorer)}" target="_blank" rel="noreferrer">${esc(row.txHash)}</a>
+         <span class="pill">facilitator: ${esc(row.adapter)}</span>`);
+    case "deliverable":
+      return addRow("deliverable", "delivered",
+        `<div class="call">${esc(row.call.toUpperCase())}</div>
+         ${row.reasons.map((r) => `<div class="reason">- ${esc(r)}</div>`).join("")}
+         <div class="reason">signed by ${esc(row.signer)}</div>`);
+    case "refused":
+      return addRow("refused", "refused",
+        `<b>REFUSED</b> <span class="muted">- ${esc(row.reason)}</span>
+         <div class="reason">cap unchanged · ${esc(row.remaining)} USD1 remaining</div>`);
+    case "settled_no_goods":
+      return addRow("nogoods", "no goods",
+        `<b>SETTLED_NO_GOODS</b> <span class="muted">- paid, not delivered</span>
+         <div class="reason">${esc((row.failures || []).join("; "))}</div>
+         <div class="reason">${esc(row.txHash)}</div>`);
+    case "balances":
+      return setBalances(row.a, row.b, true);
+  }
+}
+
+function setBalances(a, b, flash) {
+  $("balA").textContent = Number(a).toFixed(4);
+  $("balB").textContent = Number(b).toFixed(4);
+  if (!flash) return;
+  for (const id of ["balA", "balB"]) {
+    const el = $(id).parentElement;
+    el.classList.add("flash");
+    setTimeout(() => el.classList.remove("flash"), 700);
+  }
+}
+
+function setMandate(remaining) {
+  $("remaining").textContent = Number(remaining).toFixed(2);
+  $("barFill").style.width = cap ? `${Math.max(0, Math.min(100, (Number(remaining) / cap) * 100))}%` : "0%";
+}
+
+async function load() {
+  const s = await (await fetch("/api/state")).json();
+  $("addrA").textContent = short(s.buyer);
+  $("addrB").textContent = short(s.seller);
+  $("addrA").title = s.buyer;
+  $("addrB").title = s.seller;
+  setBalances(s.balances.a, s.balances.b, false);
+  cap = Number(s.mandate.cap);
+  $("cap").textContent = Number(s.mandate.cap).toFixed(2);
+  $("priceBrief").textContent = s.prices.brief;
+  $("priceDeep").textContent = s.prices.deepDive;
+  setMandate(s.mandate.remaining);
+  s.rows.forEach(render);
+
+  const m = await (await fetch("/api/model")).json();
+  $("modelbadge").innerHTML = m.configured
+    ? 'Agent A decides with <b>claude-opus-5</b>'
+    : 'Agent A decides by <b>rules</b> - set ANTHROPIC_API_KEY for the model';
+}
+
+async function ask(text) {
+  if (!text.trim()) return;
+  $("send").disabled = true;
+  $("ask").disabled = true;
+  $("status").textContent = "thinking…";
+  try {
+    const r = await (await fetch("/api/request", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    })).json();
+    if (r.balances) setBalances(r.balances.a, r.balances.b, true);
+    if (r.mandate) setMandate(r.mandate.remaining);
+    $("status").textContent = r.status;
+  } catch (e) {
+    $("status").textContent = "error";
+  } finally {
+    $("send").disabled = false;
+    $("ask").disabled = false;
+    $("ask").value = "";
+    $("ask").focus();
+  }
+}
+
+$("send").onclick = () => ask($("ask").value);
+$("ask").addEventListener("keydown", (e) => { if (e.key === "Enter") ask($("ask").value); });
+for (const chip of document.querySelectorAll(".chip")) {
+  chip.onclick = () => ask(chip.dataset.q);
+}
+$("clear").onclick = () => {
+  rowsEl.innerHTML = '<div class="empty">Nothing on the counter yet. Tell Agent A what you need.</div>';
+  $("status").textContent = "idle";
+};
+
+new EventSource("/api/tape").onmessage = (e) => render(JSON.parse(e.data));
+load();
+</script>
+</body>
+</html>
