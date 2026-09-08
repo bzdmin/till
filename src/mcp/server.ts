@@ -38,7 +38,7 @@ function build(): McpServer {
       description: "The paid skills this Till counter sells, with prices in USD1.",
       inputSchema: {},
     },
-    async () => text(await (await fetch(`${SELLER}/`)).json()),
+    async () => text(await (await fetch(`${SELLER}/counter`)).json()),
   );
 
   server.registerTool(

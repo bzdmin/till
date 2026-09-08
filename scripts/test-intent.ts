@@ -8,15 +8,16 @@ const catalog = [
 
 const phrases = [
   "I need a BTC stance",
-  "What should I do with my BTC position right now?",
-  "quick read please",
-  "Give me a thorough multi-timeframe read before I size up.",
-  "deep dive",
+  "what's ETH doing?",
+  "should I hold my solana?",
+  "quick read on doge",
+  "Give me a thorough multi-timeframe read on SOL before I size up.",
+  "deep dive on BNB",
+  "how is SUIUSDT looking",
   "banana",
 ];
 
 for (const p of phrases) {
   const d = await chooseSkill(p, catalog);
-  console.log(`  "${p}"`.padEnd(58) + `-> ${d.skill.padEnd(10)} [${d.source}]`);
-  console.log(`   ${" ".repeat(55)}${d.reasoning}`);
+  console.log(`  "${p}"`.padEnd(62) + `-> ${d.skill.padEnd(10)} ${d.symbol.padEnd(9)} [${d.source}]`);
 }

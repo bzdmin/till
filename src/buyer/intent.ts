@@ -8,6 +8,8 @@ export interface SkillOption {
 
 export interface SkillDecision {
   skill: string;
+  /** A Binance pair such as BTCUSDT. Defaults to BTCUSDT when the request names no asset. */
+  symbol: string;
   reasoning: string;
   /** "claude" when the model chose; "rules" when we fell back. Shown on the tape. */
   source: "claude" | "rules";
@@ -22,13 +24,50 @@ const chooseSkillTool: Anthropic.Tool = {
     type: "object",
     properties: {
       skill: { type: "string", description: "The exact name of the chosen skill." },
+      symbol: {
+        type: "string",
+        description:
+          "The Binance trading pair the request is about, uppercase, quoted in USDT, " +
+          "such as BTCUSDT or ETHUSDT or SOLUSDT. Use BTCUSDT when no asset is named.",
+      },
       reasoning: { type: "string", description: "One short sentence, addressed to the buyer's owner." },
     },
-    required: ["skill", "reasoning"],
+    required: ["skill", "symbol", "reasoning"],
     additionalProperties: false,
   },
   strict: true,
 };
+
+/** Names people actually use, mapped to the pair Binance quotes. */
+const TICKERS: Record<string, string> = {
+  btc: "BTCUSDT", bitcoin: "BTCUSDT", xbt: "BTCUSDT",
+  eth: "ETHUSDT", ether: "ETHUSDT", ethereum: "ETHUSDT",
+  bnb: "BNBUSDT", binancecoin: "BNBUSDT",
+  sol: "SOLUSDT", solana: "SOLUSDT",
+  xrp: "XRPUSDT", ripple: "XRPUSDT",
+  doge: "DOGEUSDT", dogecoin: "DOGEUSDT",
+  ada: "ADAUSDT", cardano: "ADAUSDT",
+  avax: "AVAXUSDT", avalanche: "AVAXUSDT",
+  link: "LINKUSDT", chainlink: "LINKUSDT",
+  dot: "DOTUSDT", polkadot: "DOTUSDT",
+  ltc: "LTCUSDT", litecoin: "LTCUSDT",
+  trx: "TRXUSDT", tron: "TRXUSDT",
+  matic: "MATICUSDT", polygon: "MATICUSDT",
+  atom: "ATOMUSDT", cosmos: "ATOMUSDT",
+  uni: "UNIUSDT", uniswap: "UNIUSDT",
+  shib: "SHIBUSDT", pepe: "PEPEUSDT", sui: "SUIUSDT", apt: "APTUSDT",
+  near: "NEARUSDT", arb: "ARBUSDT", op: "OPUSDT", ton: "TONUSDT",
+};
+
+/** Pull a pair out of plain language, falling back to Bitcoin when none is named. */
+function symbolFrom(text: string): string {
+  const explicit = text.toUpperCase().match(/\b([A-Z]{2,10})USDT\b/);
+  if (explicit) return explicit[1] + "USDT";
+  for (const word of text.toLowerCase().split(/[^a-z]+/)) {
+    if (TICKERS[word]) return TICKERS[word];
+  }
+  return "BTCUSDT";
+}
 
 const DEPTH = /deep|thorough|detailed|full|multi|timeframe|long.?term|week|swing|size up/;
 const BRIEF = /stance|now|right now|quick|short|brief|call|position|today/;
@@ -43,18 +82,20 @@ const BRIEF = /stance|now|right now|quick|short|brief|call|position|today/;
  */
 function chooseByRules(request: string, catalog: SkillOption[]): SkillDecision {
   const text = request.toLowerCase();
+  const symbol = symbolFrom(request);
   const deep = catalog.find((s) => s.name === "deep-dive");
   const brief = catalog.find((s) => s.name === "btc-brief") ?? catalog[0]!;
 
   if (DEPTH.test(text) && deep) {
-    return { skill: deep.name, reasoning: "The request asks for depth, so the deeper read is the right item.", source: "rules" };
+    return { skill: deep.name, symbol, reasoning: `The request asks for depth, so the deeper read on ${symbol} is the right item.`, source: "rules" };
   }
   if (BRIEF.test(text)) {
-    return { skill: brief.name, reasoning: "A single short-term read answers this - no need for the expensive item.", source: "rules" };
+    return { skill: brief.name, symbol, reasoning: `A single short-term read on ${symbol} answers this, no need for the expensive item.`, source: "rules" };
   }
   return {
     skill: brief.name,
-    reasoning: `No clear match for that request - defaulting to the cheapest item on the counter (${brief.name}).`,
+    symbol,
+    reasoning: `No clear match for that request, defaulting to the cheapest item on the counter (${brief.name}) on ${symbol}.`,
     source: "rules",
   };
 }
@@ -97,12 +138,14 @@ export async function chooseSkill(request: string, catalog: SkillOption[]): Prom
     const call = response.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "choose_skill",
     );
-    const input = call?.input as { skill?: string; reasoning?: string } | undefined;
+    const input = call?.input as { skill?: string; symbol?: string; reasoning?: string } | undefined;
     const chosen = catalog.find((s) => s.name === input?.skill);
     if (!chosen) return chooseByRules(request, catalog);
 
+    const symbol = (input?.symbol ?? "").toUpperCase().trim() || symbolFrom(request);
     return {
       skill: chosen.name,
+      symbol: /^[A-Z0-9]{5,20}$/.test(symbol) ? symbol : symbolFrom(request),
       reasoning: input?.reasoning?.trim() || "Chosen as the best fit for the request.",
       source: "claude",
     };

@@ -3,6 +3,8 @@ import { prices, seller } from "../config.js";
 import { SelfBroadcast } from "../settlement/selfBroadcast.js";
 import { assertDomainMatches } from "../chain/token.js";
 import { produceStance } from "../skill/stance.js";
+import { symbolExists } from "../skill/klines.js";
+import { landing } from "./landing.js";
 import { produceDeepDive } from "../skill/deepdive.js";
 import { acceptStance } from "./acceptance.js";
 import {
@@ -23,14 +25,14 @@ const base = () => process.env.SELLER_PUBLIC_URL ?? `http://localhost:${PORT}`;
 const skills = {
   "btc-brief": {
     price: prices.skill,
-    description: "Signed BTC stance for the last 48h - a call plus two reasons, from public Binance klines.",
-    produce: () => produceStance(),
+    description: "Signed stance on any Binance pair for the last 48h, a call plus two reasons from public klines.",
+    produce: (symbol: string) => produceStance(symbol),
   },
   "deep-dive": {
     price: prices.deepDive,
     description:
-      "Signed BTC stance across 1h, 4h and 1d, plus whether the horizons agree. Three reads, not one.",
-    produce: () => produceDeepDive(),
+      "Signed stance across 1h, 4h and 1d, plus whether the horizons agree. Three reads, not one.",
+    produce: (symbol: string) => produceDeepDive(symbol),
   },
 } as const;
 
@@ -51,7 +53,13 @@ app.get("/skills/:name", async (req, res) => {
   const skill = skills[name];
   if (!skill) return res.status(404).json({ error: `no such skill: ${name}` });
 
-  const url = `${base()}/skills/${name}`;
+  const symbol = String(req.query.symbol ?? "BTCUSDT").toUpperCase();
+  // Checked before the 402 is even quoted, so a typo never reaches settlement.
+  if (!(await symbolExists(symbol))) {
+    return res.status(400).json({ error: `Binance does not list ${symbol}` });
+  }
+
+  const url = `${base()}/skills/${name}?symbol=${symbol}`;
   const challenge = buildChallenge(url, skill.description, skill.price);
   const required = challenge.accepts[0]!;
 
@@ -88,7 +96,7 @@ app.get("/skills/:name", async (req, res) => {
   const startedAt = Date.now();
   let stance;
   try {
-    stance = await skill.produce();
+    stance = await skill.produce(symbol);
   } catch (e) {
     // Paid and could not deliver. Say so plainly - x402 cannot claw back.
     return res
@@ -111,16 +119,36 @@ app.get("/skills/:name", async (req, res) => {
     .json({ stance, receipt, acceptance });
 });
 
-app.get("/", (_req, res) => {
-  res.json({
-    agent: "Agent B",
-    address: seller.address,
-    counter: Object.entries(skills).map(([name, s]) => ({
-      url: `${base()}/skills/${name}`,
-      price: `${s.price} USD1`,
-      description: s.description,
-    })),
-  });
+const counterJson = () => ({
+  agent: "Agent B",
+  address: seller.address,
+  counter: Object.entries(skills).map(([name, s]) => ({
+    url: `${base()}/skills/${name}`,
+    price: `${s.price} USD1`,
+    description: s.description,
+  })),
+});
+
+app.get("/counter", (_req, res) => res.json(counterJson()));
+
+// Agents read JSON here; people get a page. Same address either way.
+app.get("/", (req, res) => {
+  if (req.accepts(["json", "html"]) === "html") {
+    return res
+      .type("html")
+      .send(
+        landing(
+          seller.address,
+          Object.entries(skills).map(([name, s]) => ({
+            name,
+            price: `${s.price} USD1`,
+            description: s.description,
+          })),
+          base(),
+        ),
+      );
+  }
+  res.json(counterJson());
 });
 
 await assertDomainMatches();

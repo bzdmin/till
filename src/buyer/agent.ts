@@ -60,7 +60,7 @@ export class BuyerAgent {
   async request(text: string, sellerBase: string): Promise<PurchaseResult> {
     tape.push({ kind: "intent", text });
 
-    const counter = (await (await fetch(`${sellerBase}/`)).json()) as {
+    const counter = (await (await fetch(`${sellerBase}/counter`)).json()) as {
       counter: { url: string; price: string; description: string }[];
     };
     const catalog: SkillOption[] = counter.counter.map((c) => ({
@@ -73,11 +73,13 @@ export class BuyerAgent {
     tape.push({
       kind: "decision",
       skill: decision.skill,
+      symbol: decision.symbol,
       reasoning: decision.reasoning,
       source: decision.source,
     });
 
-    return this.purchase(`${sellerBase}/skills/${decision.skill}`, null);
+    const url = `${sellerBase}/skills/${decision.skill}?symbol=${encodeURIComponent(decision.symbol)}`;
+    return this.purchase(url, null);
   }
 
   async purchase(url: string, intent: string | null): Promise<PurchaseResult> {

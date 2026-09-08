@@ -31,7 +31,9 @@ Every row is a surface Agent OS ships, with what Till does with it.
 
 What Till deliberately does **not** do is settle through B402's facilitator on its own counter, because that needs merchant `clientId` and `accessToken` from partner onboarding which this project does not have, and no `LiveB402` adapter exists here since an untested adapter would be worse than none. The tape names the facilitator that actually ran on every receipt.
 
-One honest note on the Binance MCP server, recorded so nobody repeats the experiment: its transfer scope moves funds only inside a dedicated Agentic sub-account and it has **no withdrawal scope at all**, so an agent can never move funds to an external address through it, and it therefore cannot pay anyone. Payment lives in x402 and B402, not in MCP.
+Two honest notes, recorded so nobody repeats the experiments. First, the counter runs in Frankfurt rather than the US, because **Binance answers `451 Unavailable For Legal Reasons` to US IP addresses**, and the first deployment sat in Virginia where it served a perfectly valid 402 and could never have delivered a stance, since producing one needs public klines. A payment rail that settles fine while the goods are unreachable is a quiet failure worth designing against, and it is why the symbol check now runs before the price is quoted rather than after payment.
+
+Second, on the Binance MCP server: its transfer scope moves funds only inside a dedicated Agentic sub-account and it has **no withdrawal scope at all**, so an agent can never move funds to an external address through it, and it therefore cannot pay anyone. Payment lives in x402 and B402, not in MCP.
 
 ## Try it live
 
@@ -47,6 +49,8 @@ curl -i https://till-counter.fly.dev/skills/btc-brief
 ```
 
 That returns `402 Payment Required` with a `payment-required` header carrying the payment terms in B402 wire format, and the body names USD1 on BNB Chain via `eip3009` at 0.10 USD1. Paying it returns a signed market stance.
+
+Any pair Binance lists works, so `?symbol=ETHUSDT` or `?symbol=SOLUSDT` quotes the same skill on that asset, and a pair Binance does not list is refused with a 400 before any price is quoted, since taking payment and then failing to fetch candles because of a typo is a `SETTLED_NO_GOODS` the buyer did nothing to deserve.
 
 ## Claims, and what backs each one
 
@@ -143,12 +147,12 @@ Two dead, four advertising USD1 on BNB Chain while serving x402 v1 on Base with 
 
 Not the candles, which are public and which the buyer could fetch free. **Agent A can fetch the candles, but it cannot produce Agent B's signature.**
 
-The deliverable is a call, `wait` or `reduce` or `hold-the-range`, with two reasons drawn from where price sits in its range and its realized volatility, signed by Agent B over the canonical JSON. It is deterministic, so the same candles always give the same call, which keeps it checkable and means no model call can time out mid demo.
+The buyer reads the pair out of plain language, so *"what's ETH doing?"* and *"should I hold my solana?"* resolve to `ETHUSDT` and `SOLUSDT`, falling back to Bitcoin when no asset is named. The deliverable is a call, `wait` or `reduce` or `hold-the-range`, with two reasons drawn from where price sits in its range and its realized volatility, signed by Agent B over the canonical JSON. It is deterministic, so the same candles always give the same call, which keeps it checkable and means no model call can time out mid demo.
 
 | skill | price | what it is |
 |---|---|---|
-| `btc-brief` | 0.10 USD1 | one read of the last 48 hours |
-| `deep-dive` | 5.00 USD1 | three reads, and whether they agree |
+| `btc-brief` | 0.10 USD1 | one read of the last 48 hours, on any pair |
+| `deep-dive` | 5.00 USD1 | three reads, and whether they agree, on any pair |
 
 The deep-dive is a different product rather than a prop existing to be refused, running the same computation over 1h, 4h and 1d windows, taking the majority call and reporting `unanimous`, `majority` or `split`. The per-timeframe results sit inside the signed payload so the signature covers them, and the acceptance predicate rejects a deep-dive carrying fewer than three timeframes or no agreement verdict, meaning the cheap deliverable cannot be served at the expensive price even by tampering.
 
