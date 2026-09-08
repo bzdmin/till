@@ -5,6 +5,7 @@ import { mandateFrom } from "../buyer/mandate.js";
 import { balanceOf } from "../chain/token.js";
 import { buyer, prices, seller, token, useAgenticWallet } from "../config.js";
 import { tape, type TapeRow } from "../tape.js";
+import { agenticAddress } from "../buyer/agenticWallet.js";
 
 const app = express();
 const PORT = Number(process.env.UI_PORT ?? 4180);
@@ -17,10 +18,18 @@ const amt = (v: bigint) => Number(formatUnits(v, token.decimals)).toFixed(2);
 
 app.use(express.static("public"));
 
+/** In agentic mode the payer is the wallet, not the local burner, so show that from the start. */
+let payer: string = buyer.address;
+if (useAgenticWallet) {
+  agenticAddress().then((a) => {
+    if (a) payer = a;
+  });
+}
+
 app.get("/api/state", async (_req, res) => {
-  const [a, b] = await Promise.all([balanceOf(buyer.address), balanceOf(seller.address)]);
+  const [a, b] = await Promise.all([balanceOf(payer as `0x${string}`), balanceOf(seller.address)]);
   res.json({
-    buyer: buyer.address,
+    buyer: payer,
     seller: seller.address,
     balances: { a: fmt(a), b: fmt(b) },
     mandate: {
@@ -53,7 +62,7 @@ app.post("/api/request", async (req, res) => {
   if (!text) return res.status(400).json({ status: "error", reason: "say what you need" });
   try {
     const result = await agent.request(text, SELLER);
-    const [a, b] = await Promise.all([balanceOf(buyer.address), balanceOf(seller.address)]);
+    const [a, b] = await Promise.all([balanceOf(agent.buyerAddress), balanceOf(seller.address)]);
     res.json({
       ...result,
       balances: { a: fmt(a), b: fmt(b) },

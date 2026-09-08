@@ -112,3 +112,14 @@ export async function signWithAgenticWallet(paymentRequirements: string): Promis
     expiresAt: signed.signatureExpiresAt,
   };
 }
+
+/** The wallet's EVM address, resolved before any purchase so the UI can show it. */
+export async function agenticAddress(): Promise<string | null> {
+  try {
+    const data = await baw(["wallet", "address", "--json"]);
+    const evm = (data.addresses ?? []).find((a: any) => a.binanceChainId === "56");
+    return evm?.address ?? null;
+  } catch {
+    return null;
+  }
+}
