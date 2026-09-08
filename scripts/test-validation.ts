@@ -12,7 +12,7 @@ import { encodeHeader, type Challenge, type PaymentPayload } from "../src/seller
 import { buyer, seller, token, usd1 } from "../src/config.js";
 
 const base = process.env.SELLER_URL ?? "http://localhost:3000";
-const url = `${base}/skills/btc-brief`;
+const url = `${base}/skills/brief`;
 const fmt = (v: bigint) => formatUnits(v, token.decimals);
 
 const challenge = (await (await fetch(url)).json()) as Challenge;

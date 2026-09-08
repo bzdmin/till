@@ -3,7 +3,7 @@ import { prices, seller } from "../config.js";
 import { SelfBroadcast } from "../settlement/selfBroadcast.js";
 import { assertDomainMatches } from "../chain/token.js";
 import { produceStance } from "../skill/stance.js";
-import { symbolExists } from "../skill/klines.js";
+import { symbolExists, warmSymbols } from "../skill/klines.js";
 import { landing } from "./landing.js";
 import { produceDeepDive } from "../skill/deepdive.js";
 import { acceptStance } from "./acceptance.js";
@@ -23,7 +23,7 @@ const PORT = Number(process.env.PORT ?? 3000);
 const base = () => process.env.SELLER_PUBLIC_URL ?? `http://localhost:${PORT}`;
 
 const skills = {
-  "btc-brief": {
+  "brief": {
     price: prices.skill,
     description: "Signed stance on any Binance pair for the last 48h, a call plus two reasons from public klines.",
     produce: (symbol: string) => produceStance(symbol),
@@ -55,8 +55,13 @@ app.get("/skills/:name", async (req, res) => {
 
   const symbol = String(req.query.symbol ?? "BTCUSDT").toUpperCase();
   // Checked before the 402 is even quoted, so a typo never reaches settlement.
-  if (!(await symbolExists(symbol))) {
-    return res.status(400).json({ error: `Binance does not list ${symbol}` });
+  // A Binance blip is 503, not "does not list" - that lie is what 400'd ETHUSDT.
+  try {
+    if (!(await symbolExists(symbol))) {
+      return res.status(400).json({ error: `Binance does not list ${symbol}` });
+    }
+  } catch {
+    return res.status(503).json({ error: "market data unreachable, try again" });
   }
 
   const url = `${base()}/skills/${name}?symbol=${symbol}`;
@@ -156,4 +161,5 @@ app.listen(PORT, () => {
   console.log(`Agent B - the counter - http://localhost:${PORT}`);
   console.log(`  ${seller.address}`);
   for (const [name, s] of Object.entries(skills)) console.log(`  /skills/${name}  ${s.price} USD1`);
+  void warmSymbols();
 });

@@ -4,7 +4,7 @@ import { signWithAgenticWallet } from "../src/buyer/agenticWallet.js";
 import { decodeHeader, type PaymentPayload } from "../src/seller/challenge.js";
 import { chain, token } from "../src/config.js";
 
-const raw = await (await fetch("http://localhost:3000/skills/btc-brief")).text();
+const raw = await (await fetch("http://localhost:3000/skills/brief")).text();
 const signed = await signWithAgenticWallet(raw);
 const p = decodeHeader<PaymentPayload>(signed.headerValue);
 const a = p.payload.authorization;

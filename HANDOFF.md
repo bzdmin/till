@@ -51,7 +51,7 @@ records the whole transaction.
 Owner mandate (cap, allowlist)
       |
       v
-Agent A --GET--> /skills/btc-brief  (Agent B)
+Agent A --GET--> /skills/brief  (Agent B)
       |<-- 402 + payment requirements
       |
       +- mandate check: amount / payee / remaining cap
@@ -250,7 +250,7 @@ cult. (Reference point: ACP has ~3.2M jobs and ~$4.3M settled and still has a
 solves.)
 
 **No registry, catalog, or marketplace UI.** Advertising *is* the 402 on
-`GET /skills/btc-brief`. If it needs a line in the UI, it is the price on the
+`GET /skills/brief`. If it needs a line in the UI, it is the price on the
 counter, not a marketplace row.
 
 **No Bazaar Sybil-scoring engine.** Attack IV in the same paper is real
@@ -322,7 +322,7 @@ Chosen so every number on screen is a real balance.
 ```
 Agent A balance     ~1.41 USD1   (after the proof settle)
 Daily mandate cap    1.00 USD1
-btc-brief            0.10 USD1   -> approved, settles
+brief            0.10 USD1   -> approved, settles
 deep-dive            5.00 USD1   -> REFUSED (over cap, and over balance)
 ```
 

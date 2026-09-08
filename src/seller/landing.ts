@@ -56,7 +56,7 @@ ${skills
   .join("\n")}
 
 <h2>Ask for one without paying</h2>
-<pre>curl -i ${origin}/skills/btc-brief</pre>
+<pre>curl -i ${origin}/skills/brief</pre>
 <p class="sub">That returns <code>402 Payment Required</code> with the terms in B402 wire format:
 USD1 on BNB Chain via <code>eip3009</code>. Attach a signed authorization and the same request
 returns the work. Any pair Binance lists works, for example

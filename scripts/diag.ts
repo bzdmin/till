@@ -5,7 +5,7 @@ import { publicClient } from "../src/chain/client.js";
 import { tokenAbi, balanceOf } from "../src/chain/token.js";
 import { seller, token } from "../src/config.js";
 
-const url = process.argv[2] ?? "https://till-counter.fly.dev/skills/btc-brief?symbol=ETHUSDT";
+const url = process.argv[2] ?? "https://till-counter.fly.dev/skills/brief?symbol=ETHUSDT";
 const raw = await (await fetch(url)).text();
 const signed = await signWithAgenticWallet(raw);
 const auth = await toSignedAuthorization(decodeHeader<PaymentPayload>(signed.headerValue));

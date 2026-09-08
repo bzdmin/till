@@ -84,7 +84,7 @@ function chooseByRules(request: string, catalog: SkillOption[]): SkillDecision {
   const text = request.toLowerCase();
   const symbol = symbolFrom(request);
   const deep = catalog.find((s) => s.name === "deep-dive");
-  const brief = catalog.find((s) => s.name === "btc-brief") ?? catalog[0]!;
+  const brief = catalog.find((s) => s.name === "brief") ?? catalog[0]!;
 
   if (DEPTH.test(text) && deep) {
     return { skill: deep.name, symbol, reasoning: `The request asks for depth, so the deeper read on ${symbol} is the right item.`, source: "rules" };

@@ -1,6 +1,6 @@
 [
   { "kind": "intent", "text": "What should I do with my BTC position right now?", "at": 1788879100000 },
-  { "kind": "decision", "skill": "btc-brief", "symbol": "BTCUSDT", "source": "claude",
+  { "kind": "decision", "skill": "brief", "symbol": "BTCUSDT", "source": "claude",
     "reasoning": "Your question is a simple \"what now\" call, so the cheap 48h signed stance covers it without paying 50x for multi-horizon reads.", "at": 1788879102000 },
   { "kind": "402", "price": "0.10 USD1", "asset": "0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d",
     "payTo": "0x8cBf326Ff4124515708068402636FD33638FF994", "network": "eip155:56", "at": 1788879103000 },

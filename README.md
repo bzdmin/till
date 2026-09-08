@@ -54,9 +54,9 @@ That gives any Agent OS client `discover`, `verify_endpoint`, `list_skills` and 
 Or without any client at all:
 
 ```bash
-curl -i https://till-counter.fly.dev/skills/btc-brief                  # a real 402
-curl -i "https://till-counter.fly.dev/skills/btc-brief?symbol=ETHUSDT" # any Binance pair
-curl -i "https://till-counter.fly.dev/skills/btc-brief?symbol=NOTACOIN" # 400, refused before pricing
+curl -i https://till-counter.fly.dev/skills/brief                  # a real 402
+curl -i "https://till-counter.fly.dev/skills/brief?symbol=ETHUSDT" # any Binance pair
+curl -i "https://till-counter.fly.dev/skills/brief?symbol=NOTACOIN" # 400, refused before pricing
 curl https://till-counter.fly.dev/counter                              # the catalogue as JSON
 ```
 
@@ -68,7 +68,7 @@ A fresh clone can run the read-only commands with no `.env` at all, because noth
 
 ```bash
 git clone https://github.com/bzdmin/till && cd till && npm install
-npm run verify-one -- https://till-counter.fly.dev/skills/btc-brief
+npm run verify-one -- https://till-counter.fly.dev/skills/brief
 npm run bazaar -- "crypto market data"
 ```
 
@@ -138,7 +138,7 @@ The buyer runs on **`claude-opus-5`**. Given a plain-language request and the co
 
 ```
 A  "should I hold my solana?"
-?  chose btc-brief on SOLUSDT  [claude]
+?  chose brief on SOLUSDT  [claude]
    A single short-term read answers this, no need for the expensive item.
 ```
 
@@ -200,7 +200,7 @@ The buyer reads the pair out of plain language, so *"what's ETH doing?"* and *"s
 
 | skill | price | what it is |
 |---|---|---|
-| `btc-brief` | 0.10 USD1 | one read of the last 48 hours, on any pair |
+| `brief` | 0.10 USD1 | one read of the last 48 hours, on any pair |
 | `deep-dive` | 5.00 USD1 | three reads, and whether they agree, on any pair |
 
 The deep-dive is a different product rather than a prop existing to be refused, running the same computation over 1h, 4h and 1d windows, taking the majority call and reporting `unanimous`, `majority` or `split`. The per-timeframe results sit inside the signed payload so the signature covers them, and the acceptance predicate rejects a deep-dive carrying fewer than three timeframes or no agreement verdict, meaning the cheap deliverable cannot be served at the expensive price even by tampering.

@@ -180,7 +180,7 @@ function render(row) {
       return addRow("intent", "intent", `A &nbsp;“${esc(row.text)}”`);
     case "decision":
       return addRow("decision", "decided",
-        `buy <b>${esc(row.skill)}</b>
+        `buy <b>${esc(row.skill)}</b> on <b>${esc(row.symbol || "BTCUSDT")}</b>
          <span class="pill">${row.source === "claude" ? "claude-opus-5" : "rule-based fallback"}</span>
          <div class="reason">${esc(row.reasoning)}</div>`);
     case "402":

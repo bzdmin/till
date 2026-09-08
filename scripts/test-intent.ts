@@ -2,7 +2,7 @@
 import { chooseSkill } from "../src/buyer/intent.js";
 
 const catalog = [
-  { name: "btc-brief", price: "0.10", description: "Signed BTC stance for the last 48h." },
+  { name: "brief", price: "0.10", description: "Signed BTC stance for the last 48h." },
   { name: "deep-dive", price: "5.00", description: "48h vs 7d structure across timeframes." },
 ];
 
