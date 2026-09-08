@@ -42,3 +42,6 @@ export const prices = {
   dailyCap: req("MANDATE_DAILY_CAP"),
 };
 
+
+/** SIGNER=agentic routes signing through the Binance Agentic Wallet CLI. */
+export const useAgenticWallet = (process.env.SIGNER ?? "local").toLowerCase() === "agentic";

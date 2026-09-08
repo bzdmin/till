@@ -4,6 +4,7 @@ export type TapeRow =
   | { kind: "intent"; text: string }
   | { kind: "decision"; skill: string; reasoning: string; source: "claude" | "rules" }
   | { kind: "402"; price: string; asset: string; payTo: string; network: string }
+  | { kind: "signer"; signer: "agentic" | "local"; label: string; wallet: string }
   | { kind: "mandate"; allowed: boolean; reason: string; spent: string; remaining: string }
   | { kind: "receipt"; adapter: string; txHash: string; explorer: string }
   | { kind: "deliverable"; call: string; reasons: string[]; signer: string }

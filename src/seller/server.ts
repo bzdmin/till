@@ -54,7 +54,8 @@ app.get("/skills/:name", async (req, res) => {
   const challenge = buildChallenge(url, skill.description, skill.price);
   const required = challenge.accepts[0]!;
 
-  const header = req.get("x-payment");
+  // x402 v2 names this PAYMENT-SIGNATURE; our own client used X-PAYMENT first.
+  const header = req.get("payment-signature") ?? req.get("x-payment");
   if (!header) {
     return res.status(402).set("payment-required", encodeHeader(challenge)).json(challenge);
   }
@@ -63,13 +64,18 @@ app.get("/skills/:name", async (req, res) => {
   try {
     payload = decodeHeader<PaymentPayload>(header);
   } catch {
-    return res.status(400).json({ error: "x-payment is not valid base64 JSON" });
+    return res.status(400).json({ error: "payment header is not valid base64 JSON" });
   }
 
   const invalid = validatePayment(payload, required);
   if (invalid) return res.status(400).json({ error: invalid });
 
-  const auth = toSignedAuthorization(payload);
+  let auth;
+  try {
+    auth = await toSignedAuthorization(payload);
+  } catch (e) {
+    return res.status(400).json({ error: (e as Error).message });
+  }
 
   let receipt;
   try {

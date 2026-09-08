@@ -4,6 +4,9 @@ import { seller, token } from "../config.js";
 import type { SignedAuthorization } from "../chain/authorization.js";
 import type { SettlementAdapter, SettlementReceipt } from "./provider.js";
 
+const fn = (a: SignedAuthorization) =>
+  a.method === "receive" ? ("receiveWithAuthorization" as const) : ("transferWithAuthorization" as const);
+
 const args = (a: SignedAuthorization) =>
   [a.from, a.to, a.value, a.validAfter, a.validBefore, a.nonce, a.v, a.r, a.s] as const;
 
@@ -21,7 +24,7 @@ export class SelfBroadcast implements SettlementAdapter {
     await publicClient.simulateContract({
       address: token.address,
       abi: tokenAbi,
-      functionName: "receiveWithAuthorization",
+      functionName: fn(auth),
       args: args(auth),
       account: seller,
     });
@@ -34,7 +37,7 @@ export class SelfBroadcast implements SettlementAdapter {
     const txHash = await walletClient.writeContract({
       address: token.address,
       abi: tokenAbi,
-      functionName: "receiveWithAuthorization",
+      functionName: fn(auth),
       args: args(auth),
       account: seller,
       chain: walletClient.chain,

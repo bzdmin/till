@@ -7,6 +7,7 @@ import { encodeHeader } from "../seller/challenge.js";
 import type { Mandate } from "./mandate.js";
 import { tape } from "../tape.js";
 import { chooseSkill, type SkillOption } from "./intent.js";
+import { signWithAgenticWallet } from "./agenticWallet.js";
 
 export interface PurchaseResult {
   status: "delivered" | "refused" | "settled_no_goods" | "error";
@@ -33,9 +34,23 @@ const pickRequirement = (challenge: Challenge): PaymentRequirement | undefined =
  * Asks for a skill, gets a price, checks the owner's mandate, and only then
  * signs. It never sends a transaction - the signature is the payment, and the
  * seller broadcasts it.
+ *
+ * Two signers. The Binance Agentic Wallet holds the key and returns only a
+ * replay header, so Till never sees one; the local viem signer is the fallback
+ * when that wallet is not connected. Either way the mandate runs first.
  */
 export class BuyerAgent {
-  constructor(private mandate: Mandate) {}
+  /** Set once the Agentic Wallet reports which address it signed from. */
+  private walletAddress: Address | null = null;
+
+  constructor(
+    private mandate: Mandate,
+    private useAgenticWallet = false,
+  ) {}
+
+  get buyerAddress(): Address {
+    return this.walletAddress ?? buyer.address;
+  }
 
   /**
    * The full agent turn: read a request in plain language, decide what to buy,
@@ -55,7 +70,12 @@ export class BuyerAgent {
     }));
 
     const decision = await chooseSkill(text, catalog);
-    tape.push({ kind: "decision", skill: decision.skill, reasoning: decision.reasoning, source: decision.source });
+    tape.push({
+      kind: "decision",
+      skill: decision.skill,
+      reasoning: decision.reasoning,
+      source: decision.source,
+    });
 
     return this.purchase(`${sellerBase}/skills/${decision.skill}`, null);
   }
@@ -67,7 +87,10 @@ export class BuyerAgent {
     if (challenged.status !== 402) {
       return { status: "error", reason: `expected 402, got ${challenged.status}` };
     }
-    const challenge = (await challenged.json()) as Challenge;
+    // Kept raw: the Agentic Wallet wants the challenge exactly as the seller sent it.
+    const rawChallenge = await challenged.text();
+    const challenge = JSON.parse(rawChallenge) as Challenge;
+
     const requirement = pickRequirement(challenge);
     if (!requirement) return { status: "error", reason: "no acceptable payment requirement offered" };
 
@@ -94,35 +117,47 @@ export class BuyerAgent {
       return { status: "refused", reason: decision.reason };
     }
 
-    // Refuse to sign against a domain we have not confirmed on-chain.
-    await assertDomainMatches();
+    let headerName = "x-payment";
+    let headerValue: string;
 
-    const auth = buildAuthorization(buyer.address, requirement.payTo as Address, amount);
-    const signed = await signAuthorization(buyer, auth);
+    try {
+      if (this.useAgenticWallet) {
+        const signed = await signWithAgenticWallet(rawChallenge);
+        headerName = signed.headerName;
+        headerValue = signed.headerValue;
+        if (signed.wallet) this.walletAddress = signed.wallet as Address;
+        tape.push({
+          kind: "signer",
+          signer: "agentic",
+          label: "Binance Agentic Wallet - Till never sees a private key",
+          wallet: signed.wallet,
+        });
+      } else {
+        // Refuse to sign against a domain we have not confirmed on-chain.
+        await assertDomainMatches();
+        headerValue = encodeHeader(await this.localPayload(url, requirement, amount));
+        tape.push({
+          kind: "signer",
+          signer: "local",
+          label: "local viem signer",
+          wallet: buyer.address,
+        });
+      }
+    } catch (e) {
+      return { status: "error", reason: `signing failed - ${(e as Error).message}` };
+    }
 
-    const payload: PaymentPayload = {
-      x402Version: 2,
-      resource: { url },
-      accepted: requirement,
-      payload: {
-        authorization: {
-          from: signed.from,
-          to: signed.to,
-          value: signed.value.toString(),
-          validAfter: signed.validAfter.toString(),
-          validBefore: signed.validBefore.toString(),
-          nonce: signed.nonce,
-        },
-        signature: { v: signed.v, r: signed.r, s: signed.s },
-      },
-    };
-
-    const paid = await fetch(url, { headers: { "x-payment": encodeHeader(payload) } });
+    const paid = await fetch(url, { headers: { [headerName]: headerValue } });
     const body = (await paid.json()) as any;
 
     if (paid.status === 502 && body?.error === "SETTLED_NO_GOODS") {
-      this.mandate.record(amount); // the money did leave, even though the goods did not arrive
-      tape.push({ kind: "settled_no_goods", txHash: body.receipt?.txHash ?? "", failures: body.failures ?? [] });
+      // The money did leave, even though the goods did not arrive.
+      this.mandate.record(amount);
+      tape.push({
+        kind: "settled_no_goods",
+        txHash: body.receipt?.txHash ?? "",
+        failures: body.failures ?? [],
+      });
       return { status: "settled_no_goods", txHash: body.receipt?.txHash };
     }
     if (!paid.ok) return { status: "error", reason: body?.error ?? `HTTP ${paid.status}` };
@@ -147,8 +182,36 @@ export class BuyerAgent {
     return { status: "delivered", stance: body.stance, txHash };
   }
 
+  private async localPayload(
+    url: string,
+    requirement: PaymentRequirement,
+    amount: bigint,
+  ): Promise<PaymentPayload> {
+    const auth = buildAuthorization(buyer.address, requirement.payTo as Address, amount);
+    const signed = await signAuthorization(buyer, auth);
+    return {
+      x402Version: 2,
+      resource: { url },
+      accepted: requirement,
+      payload: {
+        authorization: {
+          from: signed.from,
+          to: signed.to,
+          value: signed.value.toString(),
+          validAfter: signed.validAfter.toString(),
+          validBefore: signed.validBefore.toString(),
+          nonce: signed.nonce,
+        },
+        signature: { v: signed.v, r: signed.r, s: signed.s },
+      },
+    };
+  }
+
   async publishBalances() {
-    const [a, b] = await Promise.all([balanceOf(buyer.address), balanceOf(this.sellerAddress())]);
+    const [a, b] = await Promise.all([
+      balanceOf(this.buyerAddress),
+      balanceOf(this.sellerAddress()),
+    ]);
     tape.push({ kind: "balances", a: fmt(a), b: fmt(b) });
   }
 

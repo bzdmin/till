@@ -13,7 +13,7 @@ import { formatUnits } from "viem";
 import { BuyerAgent } from "./buyer/agent.js";
 import { mandateFrom } from "./buyer/mandate.js";
 import { balanceOf } from "./chain/token.js";
-import { buyer, prices, seller, token } from "./config.js";
+import { buyer, prices, seller, token, useAgenticWallet } from "./config.js";
 import { tape, type TapeRow } from "./tape.js";
 
 const rehearse = process.argv.includes("--rehearse");
@@ -24,6 +24,8 @@ const render = (row: TapeRow) => {
   switch (row.kind) {
     case "intent":       return `\n  A  "${row.text}"`;
     case "decision":     return `  ?  chose ${row.skill}  [${row.source}]\n     ${row.reasoning}`;
+    case "signer":       return `  #  signed by ${row.label}
+     ${row.wallet}`;
     case "402":        return `  B  402 Payment Required - ${row.price} to ${row.payTo.slice(0, 10)}… on ${row.network}`;
     case "mandate":      return `  ~  mandate: ${row.allowed ? "ALLOW" : "BLOCK"} - ${row.reason}`;
     case "receipt":      return `  $  settled via ${row.adapter}\n     ${row.explorer}`;
@@ -36,7 +38,7 @@ const render = (row: TapeRow) => {
 tape.on("row", (row: TapeRow) => console.log(render(row)));
 
 const mandate = mandateFrom(prices.dailyCap, prices.dailyCap, [seller.address]);
-const agent = new BuyerAgent(mandate);
+const agent = new BuyerAgent(mandate, useAgenticWallet);
 
 console.log(`Till - the counter at ${base}`);
 console.log(`  A ${buyer.address}`);
@@ -45,7 +47,8 @@ console.log(`  mandate: ${prices.dailyCap} USD1/day cap`);
 if (!rehearse) console.log(`  opening balances: A ${fmt(await balanceOf(buyer.address))}   B ${fmt(await balanceOf(seller.address))}`);
 
 if (!rehearse) {
-  await agent.request("What should I do with my BTC position right now?", base);
+  const r = await agent.request("What should I do with my BTC position right now?", base);
+  if (r.status !== "delivered") console.log(`  !  ${r.status}: ${r.reason ?? ""}`);
 }
 
 await agent.request("Give me a thorough multi-timeframe read before I size up.", base);

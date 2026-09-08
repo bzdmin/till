@@ -3,7 +3,7 @@ import { formatUnits } from "viem";
 import { BuyerAgent } from "../buyer/agent.js";
 import { mandateFrom } from "../buyer/mandate.js";
 import { balanceOf } from "../chain/token.js";
-import { buyer, prices, seller, token } from "../config.js";
+import { buyer, prices, seller, token, useAgenticWallet } from "../config.js";
 import { tape, type TapeRow } from "../tape.js";
 
 const app = express();
@@ -11,7 +11,7 @@ const PORT = Number(process.env.UI_PORT ?? 4180);
 const SELLER = process.env.SELLER_URL ?? "http://localhost:3000";
 
 const mandate = mandateFrom(prices.dailyCap, prices.dailyCap, [seller.address]);
-const agent = new BuyerAgent(mandate);
+const agent = new BuyerAgent(mandate, useAgenticWallet);
 const fmt = (v: bigint) => formatUnits(v, token.decimals);
 const amt = (v: bigint) => Number(formatUnits(v, token.decimals)).toFixed(2);
 

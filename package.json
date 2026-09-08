@@ -16,7 +16,8 @@
     "rehearse": "tsx src/demo.ts --rehearse",
     "ui": "tsx src/ui/server.ts",
     "preview:deep": "tsx scripts/preview-deepdive.ts",
-    "test:intent": "tsx scripts/test-intent.ts"
+    "test:intent": "tsx scripts/test-intent.ts",
+    "which-typehash": "tsx scripts/which-typehash.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",

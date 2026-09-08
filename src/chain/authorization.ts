@@ -11,10 +11,22 @@ export interface Authorization {
   nonce: Hex;
 }
 
+export type AuthorizationMethod = "receive" | "transfer";
+
 export interface SignedAuthorization extends Authorization {
   v: number;
   r: Hex;
   s: Hex;
+  /**
+   * Which EIP-3009 variant the signature covers.
+   *
+   * `receive` binds msg.sender to the payee, so only the seller can submit it -
+   * that is what closes Attack I-B. `transfer` is caller-unbound and is what
+   * the x402 convention (and the Binance Agentic Wallet) signs. The digests
+   * differ, so submitting one against the other reverts as an invalid
+   * signature.
+   */
+  method: AuthorizationMethod;
 }
 
 const types = {
@@ -71,5 +83,5 @@ export async function signAuthorization(
     message: auth,
   });
   const { v, r, s } = parseSignature(signature);
-  return { ...auth, v: Number(v), r, s };
+  return { ...auth, v: Number(v), r, s, method: "receive" };
 }
