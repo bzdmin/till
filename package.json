@@ -17,13 +17,19 @@
     "ui": "tsx src/ui/server.ts",
     "preview:deep": "tsx scripts/preview-deepdive.ts",
     "test:intent": "tsx scripts/test-intent.ts",
-    "which-typehash": "tsx scripts/which-typehash.ts"
+    "which-typehash": "tsx scripts/which-typehash.ts",
+    "bazaar": "tsx scripts/bazaar.ts",
+    "verify-one": "tsx scripts/verify-one.ts",
+    "pay-external": "tsx scripts/pay-external.ts",
+    "mcp": "tsx src/mcp/server.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
-    "viem": "^2.38.0"
+    "viem": "^2.38.0",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
