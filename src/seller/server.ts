@@ -17,7 +17,8 @@ import {
 const app = express();
 const adapter = new SelfBroadcast();
 const PORT = Number(process.env.PORT ?? 3000);
-const base = () => `http://localhost:${PORT}`;
+/** What the 402 advertises as the resource. Must be the address buyers can reach. */
+const base = () => process.env.SELLER_PUBLIC_URL ?? `http://localhost:${PORT}`;
 
 const skills = {
   "btc-brief": {

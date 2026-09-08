@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import { parseUnits, type Address, type Hex } from "viem";
 
 const req = (k: string): string => {
@@ -28,8 +28,20 @@ export const chain = {
   rpcUrl: req("RPC_URL"),
 };
 
-/** Agent A. Signs authorizations; never sends a transaction, so it holds no BNB. */
-export const buyer = privateKeyToAccount(asKey("BUYER_PRIVATE_KEY"));
+/**
+ * Agent A. Signs authorizations; never sends a transaction, so it holds no BNB.
+ *
+ * Only the buyer needs this key, so a seller-only deployment may omit it. The
+ * proxy turns an absent key into a readable error at the point of use rather
+ * than a crash at boot or a null dereference later.
+ */
+export const buyer: PrivateKeyAccount = process.env.BUYER_PRIVATE_KEY
+  ? privateKeyToAccount(asKey("BUYER_PRIVATE_KEY"))
+  : new Proxy({} as PrivateKeyAccount, {
+      get() {
+        throw new Error("BUYER_PRIVATE_KEY is not set: this process can sell, but not buy");
+      },
+    });
 
 /** Agent B. Broadcasts receiveWithAuthorization and pays the gas. */
 export const seller = privateKeyToAccount(asKey("SELLER_PRIVATE_KEY"));

@@ -1,0 +1,29 @@
+app = "till-counter"
+primary_region = "iad"
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Judges click a link once. A sleeping machine that cold starts reads as broken,
+  # so this one stays up.
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[env]
+  CHAIN_ID = "56"
+  RPC_URL = "https://bsc-dataseed.binance.org"
+  TOKEN_ADDRESS = "0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d"
+  TOKEN_DECIMALS = "18"
+  TOKEN_EIP712_NAME = "World Liberty Financial USD"
+  TOKEN_EIP712_VERSION = "1"
+  SKILL_PRICE = "0.10"
+  DEEP_DIVE_PRICE = "5.00"
+  MANDATE_DAILY_CAP = "1.00"
+  SELLER_PUBLIC_URL = "https://till-counter.fly.dev"
