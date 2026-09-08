@@ -84,6 +84,9 @@ npm run bazaar -- "crypto market data"
 | 6 | Bazaar listings **cannot be trusted without checking** | `npm run bazaar -- "crypto market data"` |
 | 7 | "No private key" and "front-run resistant" **cannot both be had today** | `npm run which-typehash` |
 | 8 | The buyer's **decision** is model-driven, and the money is not | `npm run test:intent` |
+| 9 | The **deployed** counter settles, on any pair, not just localhost | `0x437d1b6bb837874eb8fb94b138cbd4e8638f982fe82f5e812bc9b6bfc3e977aa` (2026-09-08) |
+
+Claim 9 ran against `till-counter.fly.dev` rather than a local process. The buyer was asked *"what's ETH doing right now?"*, chose the cheap read on `ETHUSDT`, was cleared by the mandate, signed with the Agentic Wallet and settled 0.10 USD1, and the counter returned a stance priced from that hour's Ethereum candles.
 
 On 2026-09-08 the buyer discovered CoinMarketCap in the B402 Bazaar, verified the endpoint served what its listing claimed, signed with the Agentic Wallet and paid **0.0100 USD1**, receiving 18,516 bytes of market data. Till did not broadcast that settlement; the merchant's facilitator did, submitting from `0x34f7a661`, the address B402 publishes as its signer in payment requirements. Every other transaction in this repository moves between two wallets under one operator, and that one does not.
 
@@ -260,6 +263,7 @@ x402 proves a transfer, but it does not prove the work was good and it cannot cl
 - **Till reads the Bazaar but is not listed in it**, for the reason above.
 - **USD1 rather than USDT or USDC**, for the reason above.
 - Both agents run under one operator, except the CoinMarketCap payment.
+- An Agentic Wallet signature is valid for **120 seconds**, so a buyer that dawdles between signing and replaying gets a revert rather than a refusal. Sign late, replay immediately.
 - The stance is deterministic and checkable, not alpha, and is not claimed as such, since the product is the counter and the stance is inventory.
 - The buyer needs `ANTHROPIC_API_KEY` to run on `claude-opus-5`, and falls back to deterministic rules without one. The tape marks which ran on every row.
 

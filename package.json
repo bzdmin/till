@@ -21,7 +21,8 @@
     "bazaar": "tsx scripts/bazaar.ts",
     "verify-one": "tsx scripts/verify-one.ts",
     "pay-external": "tsx scripts/pay-external.ts",
-    "mcp": "tsx src/mcp/server.ts"
+    "mcp": "tsx src/mcp/server.ts",
+    "live": "tsx scripts/live-demo.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
