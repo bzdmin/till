@@ -244,9 +244,18 @@ async function load() {
   s.rows.forEach(render);
 
   const m = await (await fetch("/api/model")).json();
-  $("modelbadge").innerHTML = m.configured
-    ? 'Agent A decides with <b>claude-opus-5</b>'
-    : 'Agent A decides by <b>rules</b> - set ANTHROPIC_API_KEY for the model';
+  if (s.readOnly) {
+    $("modelbadge").innerHTML = 'public instance, <b>read only</b>, holds no wallet';
+    $("ask").placeholder = "Read only here. Clone the repo and run it with your own keys to buy.";
+    $("ask").disabled = true;
+    $("send").disabled = true;
+    for (const chip of document.querySelectorAll(".chip")) chip.disabled = true;
+    $("status").textContent = "read only";
+  } else {
+    $("modelbadge").innerHTML = m.configured
+      ? 'Agent A decides with <b>claude-opus-5</b>'
+      : 'Agent A decides by <b>rules</b>, set ANTHROPIC_API_KEY for the model';
+  }
 }
 
 async function ask(text) {

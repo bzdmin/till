@@ -1,0 +1,27 @@
+[
+  { "kind": "intent", "text": "What should I do with my BTC position right now?", "at": 1788879100000 },
+  { "kind": "decision", "skill": "btc-brief", "symbol": "BTCUSDT", "source": "claude",
+    "reasoning": "Your question is a simple \"what now\" call, so the cheap 48h signed stance covers it without paying 50x for multi-horizon reads.", "at": 1788879102000 },
+  { "kind": "402", "price": "0.10 USD1", "asset": "0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d",
+    "payTo": "0x8cBf326Ff4124515708068402636FD33638FF994", "network": "eip155:56", "at": 1788879103000 },
+  { "kind": "mandate", "allowed": true, "reason": "within cap, 1.00 USD1 remaining", "spent": "0.00", "remaining": "1.00", "at": 1788879104000 },
+  { "kind": "signer", "signer": "agentic", "label": "Binance Agentic Wallet, Till never sees a private key",
+    "wallet": "0x54de1099024f3Aa4696618adc7DbBF3CF287Cae1", "at": 1788879105000 },
+  { "kind": "receipt", "adapter": "selfbroadcast",
+    "txHash": "0xe2d6878ef479007ab26e2689651829d33754a113c152666b1cf80c45f5b6d5fc",
+    "explorer": "https://bscscan.com/tx/0xe2d6878ef479007ab26e2689651829d33754a113c152666b1cf80c45f5b6d5fc", "at": 1788879112000 },
+  { "kind": "deliverable", "call": "hold-the-range",
+    "reasons": [
+      "Price sits 29.21% through the last 48 1h candles (range 77620.01-80559.99), mid-range, no edge in play.",
+      "Realized volatility 0.26% is unremarkable."
+    ],
+    "signer": "0x8cBf326Ff4124515708068402636FD33638FF994", "at": 1788879114000 },
+  { "kind": "balances", "a": "0.2", "b": "0.1", "at": 1788879115000 },
+  { "kind": "intent", "text": "Give me a thorough multi-timeframe read before I size up.", "at": 1788879130000 },
+  { "kind": "decision", "skill": "deep-dive", "symbol": "BTCUSDT", "source": "claude",
+    "reasoning": "You asked for a thorough multi-timeframe read, which only the deep-dive's 1h/4h/1d agreement check delivers.", "at": 1788879132000 },
+  { "kind": "402", "price": "5.00 USD1", "asset": "0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d",
+    "payTo": "0x8cBf326Ff4124515708068402636FD33638FF994", "network": "eip155:56", "at": 1788879133000 },
+  { "kind": "mandate", "allowed": false, "reason": "5.00 exceeds the per-call maximum of 1.00 USD1", "spent": "0.10", "remaining": "0.90", "at": 1788879134000 },
+  { "kind": "refused", "reason": "5.00 exceeds the per-call maximum of 1.00 USD1", "remaining": "0.90", "at": 1788879135000 }
+]

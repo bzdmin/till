@@ -37,20 +37,40 @@ Second, on the Binance MCP server: its transfer scope moves funds only inside a 
 
 ## Try it live
 
-The counter is deployed and anyone can hit it.
+Two public instances, both free to poke at, neither needing a key.
 
 | What | Where |
 |---|---|
 | The counter, what it sells and for how much | <https://till-counter.fly.dev/> |
-| A real 402 challenge, no key needed | <https://till-counter.fly.dev/skills/btc-brief> |
+| The tape, showing the runs that actually happened | <https://till-tape.fly.dev/> |
+| MCP endpoint, read-only | `https://till-tape.fly.dev/mcp` |
 
 ```bash
-curl -i https://till-counter.fly.dev/skills/btc-brief
+claude mcp add till --transport http https://till-tape.fly.dev/mcp
 ```
 
-That returns `402 Payment Required` with a `payment-required` header carrying the payment terms in B402 wire format, and the body names USD1 on BNB Chain via `eip3009` at 0.10 USD1. Paying it returns a signed market stance.
+That gives any Agent OS client `discover`, `verify_endpoint`, `list_skills` and `tape`, all read-only and all free. `buy` answers `READ_ONLY`, because the public instance holds no wallet and could not spend even if asked.
 
-Any pair Binance lists works, so `?symbol=ETHUSDT` or `?symbol=SOLUSDT` quotes the same skill on that asset, and a pair Binance does not list is refused with a 400 before any price is quoted, since taking payment and then failing to fetch candles because of a typo is a `SETTLED_NO_GOODS` the buyer did nothing to deserve.
+Or without any client at all:
+
+```bash
+curl -i https://till-counter.fly.dev/skills/btc-brief                  # a real 402
+curl -i "https://till-counter.fly.dev/skills/btc-brief?symbol=ETHUSDT" # any Binance pair
+curl -i "https://till-counter.fly.dev/skills/btc-brief?symbol=NOTACOIN" # 400, refused before pricing
+curl https://till-counter.fly.dev/counter                              # the catalogue as JSON
+```
+
+The 402 carries a `payment-required` header with the terms in B402 wire format, naming USD1 on BNB Chain via `eip3009` at 0.10 USD1. Attach a signed authorization and the same request returns the work.
+
+A pair Binance does not list is refused with a 400 before any price is quoted, since taking payment and then failing to fetch candles because of a typo is a `SETTLED_NO_GOODS` the buyer did nothing to deserve.
+
+A fresh clone can run the read-only commands with no `.env` at all, because nothing that only reads needs a key:
+
+```bash
+git clone https://github.com/bzdmin/till && cd till && npm install
+npm run verify-one -- https://till-counter.fly.dev/skills/btc-brief
+npm run bazaar -- "crypto market data"
+```
 
 ## Claims, and what backs each one
 
