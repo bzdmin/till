@@ -16,6 +16,23 @@ Binance built the answer to the second one, the B402 Bazaar, a public directory 
 
 Till is built for that world, finding counters, ranking them, checking them against what they actually serve, then paying the ones that hold up and refusing the rest under a budget it does not control.
 
+## Built on Agent OS
+
+Every row is a surface Agent OS ships, with what Till does with it.
+
+| Agent OS surface | How Till uses it |
+|---|---|
+| **x402 / B402 protocol** | Both halves, since the counter serves 402 challenges in B402 wire format while the buyer reads them, signs and replays |
+| **Binance Agentic Wallet** | `SIGNER=agentic` routes signing through the `baw` CLI, so no private key sits on the buyer side |
+| **B402 Bazaar** | Discovery, where the public catalog is searched, ranked defensively, then verified against the live endpoint |
+| **MCP** | Till *is* an MCP server over HTTP, with six tools drivable from Claude, Codex, Cursor or VS Code |
+| **Skills Hub** | Packaged as a skill, [`SKILL.md`](./SKILL.md) at the repository root |
+| **Binance market data** | Public klines, keyless and read-only, feeding the deliverable |
+
+What Till deliberately does **not** do is settle through B402's facilitator on its own counter, because that needs merchant `clientId` and `accessToken` from partner onboarding which this project does not have, and no `LiveB402` adapter exists here since an untested adapter would be worse than none. The tape names the facilitator that actually ran on every receipt.
+
+One honest note on the Binance MCP server, recorded so nobody repeats the experiment: its transfer scope moves funds only inside a dedicated Agentic sub-account and it has **no withdrawal scope at all**, so an agent can never move funds to an external address through it, and it therefore cannot pay anyone. Payment lives in x402 and B402, not in MCP.
+
 ## Try it live
 
 The counter is deployed and anyone can hit it.
@@ -45,22 +62,47 @@ That returns `402 Payment Required` with a `payment-required` header carrying th
 
 On 2026-09-08 the buyer discovered CoinMarketCap in the B402 Bazaar, verified the endpoint served what its listing claimed, signed with the Agentic Wallet and paid **0.0100 USD1**, receiving 18,516 bytes of market data. Till did not broadcast that settlement; the merchant's facilitator did, submitting from `0x34f7a661`, the address B402 publishes as its signer in payment requirements. Every other transaction in this repository moves between two wallets under one operator, and that one does not.
 
-## Built on Agent OS
+## Architecture
 
-Every row is a surface Agent OS ships, with what Till does with it.
+```
+                       B402 Bazaar  (Binance)
+                              |
+                     search, rank, verify
+                              v
+  owner mandate  ------>  Agent A                Agent B
+  cap, allowlist          the buyer              the counter
+                              |                      |
+                              |------ GET ---------->|
+                              |<--- 402 + price -----|
+                              |
+                       mandate checked
+                       before anything is signed
+                              |
+                  Binance Agentic Wallet
+                  signs the EIP-3009 authorization
+                              |
+                              |-- replay with signature -->|
+                              |                            settle on BNB Chain
+                              |                            run the skill
+                              |                            acceptance predicate
+                              |<--- 200, stance, tx hash --|
+                              v
+                            tape
+```
 
-| Agent OS surface | How Till uses it |
-|---|---|
-| **x402 / B402 protocol** | Both halves, since the counter serves 402 challenges in B402 wire format while the buyer reads them, signs and replays |
-| **Binance Agentic Wallet** | `SIGNER=agentic` routes signing through the `baw` CLI, so no private key sits on the buyer side |
-| **B402 Bazaar** | Discovery, where the public catalog is searched, ranked defensively, then verified against the live endpoint |
-| **MCP** | Till *is* an MCP server over HTTP, with six tools drivable from Claude, Codex, Cursor or VS Code |
-| **Skills Hub** | Packaged as a skill, [`SKILL.md`](./SKILL.md) at the repository root |
-| **Binance market data** | Public klines, keyless and read-only, feeding the deliverable |
+The buyer never sends a transaction and holds no BNB, since the signature is the payment and the seller broadcasts it. The mandate sits between the decision and the signature, so a purchase is refused before anything is signed rather than after.
 
-What Till deliberately does **not** do is settle through B402's facilitator on its own counter, because that needs merchant `clientId` and `accessToken` from partner onboarding which this project does not have, and no `LiveB402` adapter exists here since an untested adapter would be worse than none. The tape names the facilitator that actually ran on every receipt.
-
-One honest note on the Binance MCP server, recorded so nobody repeats the experiment: its transfer scope moves funds only inside a dedicated Agentic sub-account and it has **no withdrawal scope at all**, so an agent can never move funds to an external address through it, and it therefore cannot pay anyone. Payment lives in x402 and B402, not in MCP.
+```
+src/chain/token.ts            ABI, balances, and the EIP-712 domain guard
+src/chain/authorization.ts    build and sign an EIP-3009 authorization
+src/settlement/               the SettlementAdapter seam, and SelfBroadcast
+src/skill/                    public klines to a deterministic signed stance
+src/seller/                   the counter: 402, validation, settle, deliver, accept
+src/buyer/                    skill choice, the owner mandate, Bazaar discovery,
+                              the Agentic Wallet signer, the purchase loop
+src/mcp/                      Till as an MCP server
+src/ui/                       the tape
+```
 
 ## Why this needed no permission from anyone
 
